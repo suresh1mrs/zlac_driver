@@ -68,6 +68,7 @@ class Driver:
         self._pub_tf = rospy.get_param("~pub_tf", False)
 
         self.motor_reset_alarm_conter = 0
+        self.motor_health_counter = 0
 
 
         try: 
@@ -125,8 +126,8 @@ class Driver:
         """
         This method checks the driver errors if any.
         """
-        (L_fault, L_code),(R_fault, R_code) = self.motors.get_fault_code()
 
+        (L_fault, L_code),(R_fault, R_code) = self.motors.get_fault_code()
         if (L_fault or R_fault):
             rospy.loginfo(f"Motor is in fault state, Left Motor : {L_fault}, Right Motor : {R_fault}")
             rospy.loginfo(f"Motor fault code, Left Motor: {L_code}, Right Motor : {R_code}")
@@ -147,6 +148,13 @@ class Driver:
             self.motor_reset_alarm_conter += 1 
             rospy.loginfo(f"Reset alarm count: [{self.motor_reset_alarm_conter}].")
             rospy.loginfo(f"Reset Done.")
+
+        if self.motor_health_counter % 25 == 0 or (L_fault or R_fault):   # 25 times slow publishing than rosnode
+            voltage = self.motors.get_driver_voltage()
+            l_curr, r_curr = self.motors.get_motor_current()
+            l_temp, r_temp = self.motors.get_motor_temperature()
+            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{-1*r_curr}], Temperature: L[{l_temp}] R[{r_temp}]")
+        self.motor_health_counter +=1
         
     def applyControls(self):
         """
