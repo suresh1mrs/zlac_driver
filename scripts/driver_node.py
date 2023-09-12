@@ -27,7 +27,7 @@ class Driver:
         self._wheel_ids = {"l":1, "r":2}
         self._flip_direction = {"l": 1, "r": -1}
 
-        # Velocity vs. Troque modes
+        # Velocity vs distance modes
         self._speed_control = rospy.get_param("~speed_mode", True)
 
         # Stores current wheel speeds [rpm]
@@ -39,8 +39,9 @@ class Driver:
         
         self._wheel_radius = rospy.get_param("~wheel_radius", 0.1016)
 
-        self._track_width = rospy.get_param("~track_width", 0.45)
+        self._track_width = rospy.get_param("~track_width", 0.476)
 
+        #TODO Max speed limit at driver level to be implimented 
         self._max_vx = rospy.get_param("~max_vx", 1.5)
         self._max_w = rospy.get_param("~max_w", 1.0)
 
@@ -164,6 +165,7 @@ class Driver:
             # Send target velocity to the motor controller
             try:
                 self.motors.set_rpm(L_rpm=self._target_whl_rpm["l"],R_rpm=self._target_whl_rpm["r"])
+                rospy.loginfo(f"Motor RPM set to L={self._target_whl_rpm['l']}, R={self._target_whl_rpm['r']}")
                 
             except Exception as e:
                 rospy.logerr_throttle(1, "[applyControls] Error in setting wheel velocity: %s", e)
@@ -180,13 +182,14 @@ class Driver:
         v_d = vx
         w_d = w
 
+        # TODO
         # Limit velocity by acceleration
         current_t = time()
-        dt = current_t - self._last_cmd_t
+        # dt = current_t - self._last_cmd_t
         self._last_cmd_t = current_t
-        odom = self._diff_drive.calcRobotOdom(dt)
-        current_v = odom['v']
-        current_w = odom['w']
+        # # odom = self._diff_drive.calcRobotOdom(dt)
+        # current_v = odom['v']
+        # current_w = odom['w']
 
         # # Figure out the max acceleration sign
         # dv = vx-current_v
@@ -221,10 +224,10 @@ class Driver:
         #     w_d = max_w
 
         if (abs(v_d) > self._max_vx):
-            rospy.logwarn_throttle(1, "Commanded linear velocity %s is more than maximum magnitude %s", sign_x*vx, sign_x*self._max_vx)
+            rospy.logwarn_throttle(1, "Commanded linear velocity %s is more than maximum magnitude %s. limiting it.", sign_x*vx, sign_x*self._max_vx)
             v_d = sign_x * self._max_vx
         if (abs(w_d) > self._max_w):
-            rospy.logwarn_throttle(1, "Commanded angular velocity %s is more than maximum magnitude %s", sign_w*w, sign_w*self._max_w)
+            rospy.logwarn_throttle(1, "Commanded angular velocity %s is more than maximum magnitude %s. limiting it.", sign_w*w, sign_w*self._max_w)
             w_d = sign_w * self._max_w
 
         # Compute wheels velocity commands [rad/s]
@@ -244,11 +247,10 @@ class Driver:
         """ Computes & publishes odometry msg
         """
         try:
-            vl, vr = self.motors.get_rpm()
-            # rospy.loginfo(f"Motor current RPM, L:[{vl}], R:[{vr}]")
-            self._diff_drive._l_vel = self.rpmToRps(vl) * self._flip_direction["l"]
-            self._diff_drive._r_vel = self.rpmToRps(vr) * self._flip_direction["r"]
-            # rospy.loginfo(f"Motor current RPS, L:[{self._diff_drive._l_vel}], R:[{self._diff_drive._r_vel}]")
+            vl, vr = self.motors.get_linear_velocities()
+            # rospy.loginfo(f"Motor current speed, L:[{vl}], R:[{vr}] @m/sec")
+            self._diff_drive._l_vel = round(vl, 5)
+            self._diff_drive._r_vel = round(vr, 5)
 
             # resetting motor_reset_alarm_conter
             # if vl > 0 or vr > 0:
@@ -261,7 +263,7 @@ class Driver:
 
         now = time()
 
-        dt= now - self._last_odom_dt
+        dt = now - self._last_odom_dt
         self._last_odom_dt = now
 
         odom = self._diff_drive.calcRobotOdom(dt)
