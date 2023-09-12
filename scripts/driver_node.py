@@ -235,8 +235,8 @@ class Driver:
         # convert rad/s to rpm
         wl_rpm = self.rpsToRpm(wl)
         wr_rpm = self.rpsToRpm(wr)
-        self._target_whl_rpm["l"] = int(wl_rpm)
-        self._target_whl_rpm["r"] = int(wr_rpm)
+        self._target_whl_rpm["l"] = int(wl_rpm * self._flip_direction["l"])
+        self._target_whl_rpm["r"] = int(wr_rpm * self._flip_direction["r"])
         # rospy.loginfo(f"Motor target RPM, L=[{self._target_whl_rpm['l']}], R=[{self._target_whl_rpm['r']}]")
 
         # Apply control in the main loop
