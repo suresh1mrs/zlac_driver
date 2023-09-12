@@ -154,7 +154,7 @@ class Driver:
             voltage = self.motors.get_driver_voltage()
             l_curr, r_curr = self.motors.get_motor_current()
             l_temp, r_temp = self.motors.get_motor_temperature()
-            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{-1*r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}], Robot Path: [{self._diff_drive.path}]")
+            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}], Robot Path: [{self._diff_drive.path}]")
         self.motor_health_counter +=1
         
     def applyControls(self):
