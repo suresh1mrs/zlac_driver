@@ -42,8 +42,8 @@ class DiffDrive:
 
         self._l_pos = 0 # Left encoder position
         self._r_pos = 0 # Right right
-        self._l_vel = 0 # left wheel angular velocity in rad/s
-        self._r_vel = 0
+        self._l_vel = 0 # left wheel linear velocity in m/s
+        self._r_vel = 0 # right wheel linear velocity in m/s
 
     def calcWheelVel(self,v,w):
         """Calculates the left and right wheel speeds in rad/s from vx and w

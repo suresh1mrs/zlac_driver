@@ -154,7 +154,7 @@ class Driver:
             voltage = self.motors.get_driver_voltage()
             l_curr, r_curr = self.motors.get_motor_current()
             l_temp, r_temp = self.motors.get_motor_temperature()
-            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{-1*r_curr}], Temperature: L[{l_temp}] R[{r_temp}]")
+            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{-1*r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}], Robot Path: [{self._diff_drive.path}]")
         self.motor_health_counter +=1
         
     def applyControls(self):
@@ -165,7 +165,6 @@ class Driver:
             # Send target velocity to the motor controller
             try:
                 self.motors.set_rpm(L_rpm=self._target_whl_rpm["l"],R_rpm=self._target_whl_rpm["r"])
-                rospy.loginfo(f"Motor RPM set to L={self._target_whl_rpm['l']}, R={self._target_whl_rpm['r']}")
                 
             except Exception as e:
                 rospy.logerr_throttle(1, "[applyControls] Error in setting wheel velocity: %s", e)
@@ -236,9 +235,8 @@ class Driver:
         # convert rad/s to rpm
         wl_rpm = self.rpsToRpm(wl)
         wr_rpm = self.rpsToRpm(wr)
-        # rospy.loginfo(f"Motor target RPS, L=[{wl}], R=[{wr}]")
-        self._target_whl_rpm["l"] = int(wl_rpm * self._flip_direction["l"])
-        self._target_whl_rpm["r"] = int(wr_rpm * self._flip_direction["r"])
+        self._target_whl_rpm["l"] = int(wl_rpm)
+        self._target_whl_rpm["r"] = int(wr_rpm)
         # rospy.loginfo(f"Motor target RPM, L=[{self._target_whl_rpm['l']}], R=[{self._target_whl_rpm['r']}]")
 
         # Apply control in the main loop
