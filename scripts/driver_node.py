@@ -265,6 +265,7 @@ class Driver:
         self._last_odom_dt = now
 
         odom = self._diff_drive.calcRobotOdom(dt)
+        rospy.loginfo(f"Current robot angle : [{self._odom['yaw']}].")
 
         msg = Odometry()
 
