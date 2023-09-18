@@ -23,7 +23,7 @@ speed_mode: True
 wheel_radius: 0.1016
 
 # Track width [meters]
-track_width: 0.6405
+track_width: 0.476
 
 # Motor controller ID
 slave_id: 1
