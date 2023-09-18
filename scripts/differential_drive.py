@@ -78,7 +78,7 @@ class DiffDrive:
                 ## rotatiing CW
                 linear_vel = 0
                 angular_vel = (vl-vr)/self._track_width
-                self._odom['yaw'] = self._odom['yaw'] + angular_vel*dt
+                self._odom['yaw'] = self._odom['yaw'] - angular_vel*dt
 
                 self.path = "skid_right"
 
