@@ -1,7 +1,7 @@
 # ROS parameters for the ZLAC8015D motor driver
 
 # ROS loop rate [Hz]
-loop_rate: 100.0
+loop_rate: 100
 
 # True: publish tf
 pub_tf: True
@@ -13,8 +13,8 @@ speed_control: True
 port: "/dev/ttyUSB0"
 
 #wheels acceleration and deceleration time
-accel_time: 500
-decel_time: 500
+accel_time: 800
+decel_time: 800
 
 # If True torque-based velocity controller is used. Otherwise, velocity setpoints are going to be directly sent
 speed_mode: True
@@ -35,9 +35,9 @@ max_vx: 1.5
 max_w: 1
 
 # Maximum linear acceleration, m/s/s
-# max_lin_accel: 10
+max_lin_accel: 30
 # Maximum angular acceleration, rad/s/s
-# max_ang_accel: 15
+max_ang_accel: 30
 
 odom_frame: "odom_link"
 robot_frame: "base_link"

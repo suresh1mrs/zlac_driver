@@ -46,9 +46,9 @@ class Driver:
         self._max_w = rospy.get_param("~max_w", 1.0)
 
         # Max linear accelration [m/s^2] >0
-        # self._max_lin_accel = rospy.get_param("~max_lin_accel", 10)
+        self._max_lin_accel = rospy.get_param("~max_lin_accel", 10)
         # Max angular accelration [rad/s^2] >0
-        # self._max_ang_accel = rospy.get_param("~max_ang_accel", 15)
+        self._max_ang_accel = rospy.get_param("~max_ang_accel", 15)
 
         self._odom_frame = rospy.get_param("~odom_frame", "odom_link")
         self._robot_frame = rospy.get_param("~robot_frame", "base_link")
@@ -69,7 +69,8 @@ class Driver:
         self._pub_tf = rospy.get_param("~pub_tf", False)
 
         self.motor_reset_alarm_conter = 0
-        self.motor_health_counter = 0
+        self.motor_fault_shutdown = False
+        self.motor_health_display_counter = 0
 
 
         try: 
@@ -144,18 +145,21 @@ class Driver:
             elif(L_code==self.motors.HIGH_TEMP or R_code==self.motors.HIGH_TEMP):
                 rospy.loginfo(f"Motor fault reason - High Temperature")
 
+            
             rospy.loginfo(f"Resetting Motor fault.....")
             self.motors.clear_alarm()
-            self.motor_reset_alarm_conter += 1 
-            rospy.loginfo(f"Reset alarm count: [{self.motor_reset_alarm_conter}].")
             rospy.loginfo(f"Reset Done.")
+            self.motor_reset_alarm_conter += 1
+            rospy.loginfo(f"Reset alarm count: [{self.motor_reset_alarm_conter}].")
+            if self.motor_reset_alarm_conter > 10:
+                self.motor_fault_shutdown = True
 
-        if self.motor_health_counter % 25 == 0 or (L_fault or R_fault):   # 25 times slow publishing than rosnode
+        if self.motor_health_display_counter % 25 == 0 or (L_fault or R_fault):   # 25 times slow publishing than rosnode
             voltage = self.motors.get_driver_voltage()
             l_curr, r_curr = self.motors.get_motor_current()
             l_temp, r_temp = self.motors.get_motor_temperature()
             rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}], Robot Path: [{self._diff_drive.path}]")
-        self.motor_health_counter +=1
+        self.motor_health_display_counter +=1
         
     def applyControls(self):
         """
@@ -186,15 +190,15 @@ class Driver:
         current_t = time()
         # dt = current_t - self._last_cmd_t
         self._last_cmd_t = current_t
-        # # odom = self._diff_drive.calcRobotOdom(dt)
+        # odom = self._diff_drive.calcRobotOdom(dt)
         # current_v = odom['v']
         # current_w = odom['w']
 
-        # # Figure out the max acceleration sign
+        # # # Figure out the max acceleration sign
         # dv = vx-current_v
         # abs_dv = abs(dv)
         # if (abs_dv > 0):
-        #     lin_acc = (abs_dv/dv)*self._max_lin_accel
+        #     lin_acc = (abs_dv/dv)*self._max_lin_accel     
         # else:
         #     lin_acc = self._max_lin_accel
 
@@ -265,7 +269,7 @@ class Driver:
         self._last_odom_dt = now
 
         odom = self._diff_drive.calcRobotOdom(dt)
-        rospy.loginfo(f"Current robot angle : [{self._odom['yaw']}].")
+        #rospy.loginfo(f"Current robot angle : [{self._odom['yaw']}].")
 
         msg = Odometry()
 
@@ -363,7 +367,7 @@ class Driver:
     def mainLoop(self):
         rate = rospy.Rate(self._loop_rate)
 
-        while not rospy.is_shutdown() and self.motor_reset_alarm_conter < 10:
+        while not rospy.is_shutdown() and not self.motor_fault_shutdown:
             now = time()
 
             dt = now - self._last_cmd_t
@@ -383,17 +387,18 @@ class Driver:
             # self.pubMotorState()
             
             rate.sleep()
-        
+        if self.motor_fault_shutdown:
+            rospy.loginfo("Closing motor node sue to unhandled fault.\n")
         rospy.loginfo("ZLAC8015D | Closed motor node \n")
         # Disable the motors on closing
         self.motors.disable_motor()
   
 
 if __name__ == "__main__":
-    rospy.init_node("** Motor driver node started ** \n",anonymous=True, log_level=rospy.INFO)
+    rospy.init_node("motor_driver_node", anonymous=True, log_level=rospy.INFO)
     try:
         driver = Driver()
-
         driver.mainLoop()
     except rospy.ROSInterruptException:
+        rospy.loginfo("ZLAC8015D | Closed motor node \n")
         driver.motors.disable_motor()
