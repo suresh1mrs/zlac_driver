@@ -158,7 +158,7 @@ class Driver:
             voltage = self.motors.get_driver_voltage()
             l_curr, r_curr = self.motors.get_motor_current()
             l_temp, r_temp = self.motors.get_motor_temperature()
-            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}], Robot Path: [{self._diff_drive.path}]")
+            rospy.loginfo(f"Driver_voltage: {voltage}, Current: L[{l_curr}] R[{r_curr}], Temp: L[{l_temp}] R[{r_temp}], Wheel RPM: L[{self._target_whl_rpm['l']}] R[{self._target_whl_rpm['r']}]")
         self.motor_health_display_counter +=1
         
     def applyControls(self):
@@ -250,9 +250,13 @@ class Driver:
         """
         try:
             vl, vr = self.motors.get_linear_velocities()
+            dist_l, dist_r = self.motors.get_wheels_travelled()
             # rospy.loginfo(f"Motor current speed, L:[{vl}], R:[{vr}] @m/sec")
             self._diff_drive._l_vel = round(vl, 5)
             self._diff_drive._r_vel = round(vr, 5)
+
+            self._diff_drive.dist_l = round(dist_l, 5)
+            self._diff_drive.dist_r = round(dist_r, 5)
 
             # resetting motor_reset_alarm_conter
             # if vl > 0 or vr > 0:
@@ -278,10 +282,10 @@ class Driver:
         msg.header.frame_id=self._odom_frame
         msg.child_frame_id = self._robot_frame
 
-        msg.pose.pose.position.x = odom["x"]
-        msg.pose.pose.position.y = odom["y"]
+        msg.pose.pose.position.x = odom.x
+        msg.pose.pose.position.y = odom.y
         msg.pose.pose.position.z = 0.0
-        odom_quat = tf.transformations.quaternion_from_euler(0, 0, odom['yaw'])
+        odom_quat = tf.transformations.quaternion_from_euler(0, 0, odom.yaw)
         msg.pose.pose.orientation.x = odom_quat[0]
         msg.pose.pose.orientation.y = odom_quat[1]
         msg.pose.pose.orientation.z = odom_quat[2]
@@ -295,9 +299,9 @@ class Driver:
         msg.pose.covariance[35] = 1000.0 # yaw
 
         # For twist, velocities are w.r.t base_link. So, only x component (forward vel) is used
-        msg.twist.twist.linear.x = odom['v']
+        msg.twist.twist.linear.x = odom.v
         msg.twist.twist.linear.y = 0 #odom['y_dot']
-        msg.twist.twist.angular.z = odom['w']
+        msg.twist.twist.angular.z = odom.w
         msg.twist.covariance[0] = 0.1 # vx
         msg.twist.covariance[7] = 0.1 # vx
         msg.twist.covariance[14] = 1000.0 # vz
@@ -308,7 +312,7 @@ class Driver:
         self._odom_pub.publish(msg)
         if self._pub_tf:
             # Send TF
-            self._tf_br.sendTransform((odom['x'],odom['y'],0),odom_quat,time_stamp,self._robot_frame,self._odom_frame)
+            self._tf_br.sendTransform((odom.x,odom.y,0),odom_quat,time_stamp,self._robot_frame,self._odom_frame)
 
         # msg = Float64()
         # msg.data = odom["v"] # Forward velocity

@@ -10,7 +10,7 @@ pub_tf: True
 speed_control: True
 
 # motor port
-port: "/dev/ttyUSB0"
+port: "/dev/motor_driver"
 
 #wheels acceleration and deceleration time
 accel_time: 800
